@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>Ficha do Lookbook</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
   :root{
     --bg:#F7F6F3;
@@ -345,12 +346,141 @@
     .whatsapp-fab{width:50px;height:50px;}
     .whatsapp-fab svg{width:26px;height:26px;}
   }
+
+  /* ---------- tela de login ---------- */
+  .login-screen{
+    min-height:100vh;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    padding:24px 16px;
+  }
+  .login-card{
+    background:var(--panel);
+    border:1px solid var(--line);
+    border-radius:16px;
+    padding:28px 26px 24px;
+    max-width:360px;
+    width:100%;
+    text-align:center;
+  }
+  .login-card img{max-width:150px;height:auto;margin-bottom:14px;opacity:.92;}
+  .login-card h1{font-size:20px;margin-bottom:6px;}
+  .login-sub{font-size:13px;color:var(--ink-soft);margin-bottom:18px;}
+  .login-card .field{text-align:left;margin-bottom:12px;}
+  .login-error{
+    color:var(--nao);
+    font-size:12.5px;
+    font-weight:600;
+    min-height:16px;
+    margin:4px 0 10px;
+    text-align:left;
+  }
+  .admin-link{
+    background:none;
+    border:none;
+    color:var(--ink-soft);
+    font-size:11.5px;
+    text-decoration:underline;
+    cursor:pointer;
+    margin-top:16px;
+    font-family:-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif;
+  }
+  .admin-box{
+    margin-top:16px;
+    padding-top:16px;
+    border-top:1px dashed var(--line);
+    text-align:left;
+  }
+  .admin-box h3{font-size:14px;margin-bottom:12px;text-align:center;}
+  .admin-create-msg{
+    font-size:12.5px;
+    white-space:pre-line;
+    background:var(--sim-bg);
+    color:var(--sim);
+    border-radius:8px;
+    padding:10px 12px;
+    margin-top:10px;
+    display:none;
+  }
+  .admin-create-msg.show{display:block;}
+  .admin-create-msg.error{background:var(--nao-bg);color:var(--nao);}
+
+  /* ---------- botao de sair no header ---------- */
+  .logout-btn{
+    position:absolute;
+    top:20px;right:16px;
+    background:rgba(255,255,255,.14);
+    color:#fff;
+    border:none;
+    border-radius:20px;
+    padding:6px 14px;
+    font-size:12px;
+    font-weight:600;
+    cursor:pointer;
+    font-family:-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif;
+  }
+  .logout-btn:hover{background:rgba(255,255,255,.24);}
+  header .inner{position:relative;}
 </style>
 </head>
 <body>
 
+<div id="loginScreen" class="login-screen">
+  <div class="login-card">
+    <img src="" id="loginLogo" alt="AI Creative Studio">
+    <h1>Ficha do Lookbook</h1>
+    <p class="login-sub">Entre com o usuário e senha que a estúdio te passou.</p>
+
+    <div class="field">
+      <label class="f-label">Usuário</label>
+      <input type="text" id="login_user" autocomplete="username">
+    </div>
+    <div class="field">
+      <label class="f-label">Senha</label>
+      <input type="password" id="login_pass" autocomplete="current-password">
+    </div>
+    <div id="loginError" class="login-error"></div>
+    <button class="btn btn-main" id="btnLogin" style="width:100%;">Entrar</button>
+
+    <button type="button" id="btnShowAdminGate" class="admin-link">Área do estúdio</button>
+
+    <div id="adminGate" class="admin-box" style="display:none;">
+      <div class="field">
+        <label class="f-label">Senha de administrador</label>
+        <input type="password" id="admin_pin">
+      </div>
+      <button class="btn btn-ghost" id="btnAdminUnlock" style="width:100%;">Acessar</button>
+      <div id="adminGateError" class="login-error"></div>
+      <button type="button" id="btnCancelAdminGate" class="admin-link">Voltar</button>
+    </div>
+
+    <div id="adminPanel" class="admin-box" style="display:none;">
+      <h3>Criar novo acesso</h3>
+      <div class="field">
+        <label class="f-label">Nome do cliente (só pra identificar)</label>
+        <input type="text" id="new_nome" placeholder="ex: Maró">
+      </div>
+      <div class="field">
+        <label class="f-label">Usuário</label>
+        <input type="text" id="new_user" placeholder="ex: maro">
+      </div>
+      <div class="field">
+        <label class="f-label">Senha</label>
+        <input type="text" id="new_pass" placeholder="ex: maro123">
+      </div>
+      <button class="btn btn-main" id="btnCreateClient" style="width:100%;">Criar conta</button>
+      <div id="adminCreateMsg" class="admin-create-msg"></div>
+      <button type="button" id="btnBackToLogin" class="admin-link">Voltar pro login</button>
+    </div>
+  </div>
+</div>
+
+<div id="appScreen" style="display:none;">
+
 <header>
   <div class="inner">
+    <button type="button" id="btnLogout" class="logout-btn">Sair</button>
     <h1>Ficha do Lookbook</h1>
     <p>Preencha uma ficha para cada referência. Você pode enviar fotos de apoio em alguns campos, se necessário.</p>
     <div class="progress-pill" id="progressPill">0 referências prontas</div>
@@ -459,6 +589,8 @@
 
 </div>
 
+</div>
+
 <div class="toast" id="toast"></div>
 
 <div class="whatsapp-fab-wrap" id="whatsappFab">
@@ -485,9 +617,17 @@ const SIMPLE_TOGGLE_FIELDS_EXTRA = [
   {key:'foto_costas', label:'Necessita foto de costas?'}
 ];
 
+function makeId(){
+  if(window.crypto && crypto.randomUUID) return crypto.randomUUID();
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, c=>{
+    const r = Math.random()*16|0, v = c==='x' ? r : (r&0x3|0x8);
+    return v.toString(16);
+  });
+}
+
 function defaultState(){
   const s = {
-    _id: 'ref_' + Date.now() + '_' + Math.random().toString(36).slice(2,8),
+    _id: makeId(),
     codigo:'', variante:'', genero:'menina', grade:'', foto_conceito:false,
     comprimento_especificar:'nao', comprimento_txt:'',
     calcado_usa:'sim', calcado_txt:'', calcado_fotos:[],
@@ -798,7 +938,7 @@ function applyConceptState(){
 }
 
 function normalizeState(s){
-  if(!s._id) s._id = 'ref_' + Date.now() + '_' + Math.random().toString(36).slice(2,8);
+  if(!s._id) s._id = makeId();
   QUAL_PHOTO_FIELDS.forEach(f=>{
     if(!Array.isArray(s[f.key+'_fotos'])){
       s[f.key+'_fotos'] = s[f.key+'_foto'] ? [s[f.key+'_foto']] : [];
@@ -922,7 +1062,7 @@ function renderSavedList(){
   });
   wrap.querySelectorAll('[data-del]').forEach(b=>{
     let confirming = false;
-    b.addEventListener('click', (e)=>{
+    b.addEventListener('click', async (e)=>{
       e.stopPropagation();
       if(!confirming){
         confirming = true;
@@ -931,7 +1071,7 @@ function renderSavedList(){
         b.title = 'Toque de novo para confirmar a exclusão';
         setTimeout(()=>{ confirming=false; b.textContent='✕'; b.classList.remove('confirming'); b.title='Excluir'; }, 3000);
       } else {
-        deleteRef(b.dataset.del);
+        await deleteRef(b.dataset.del);
       }
     });
   });
@@ -947,11 +1087,15 @@ function loadRef(id){
   window.scrollTo({top:0,behavior:'smooth'});
 }
 
-function deleteRef(id){
+async function deleteRef(id){
+  const { error } = await sb.from('fichas').delete().eq('id', id);
+  if(error){
+    showToast('Não consegui excluir — verifique sua internet e tente de novo');
+    return;
+  }
   refs = refs.filter(r=>r.state._id!==id);
   if(editingId===id){ editingId=null; }
   renderSavedList();
-  persistDraft();
   showToast('Referência excluída');
 }
 
@@ -963,8 +1107,28 @@ function validateBeforeSave(){
   return true;
 }
 
-function saveCurrentRef(){
+async function saveCurrentRef(){
   if(!validateBeforeSave()) return false;
+
+  const { data: userData, error: userErr } = await sb.auth.getUser();
+  if(userErr || !userData || !userData.user){
+    showToast('Sua sessão expirou — faça login novamente');
+    return false;
+  }
+
+  const payload = {
+    id: state._id,
+    user_id: userData.user.id,
+    codigo: state.codigo.trim(),
+    data: state,
+    updated_at: new Date().toISOString()
+  };
+  const { error } = await sb.from('fichas').upsert(payload, { onConflict: 'id' });
+  if(error){
+    showToast('Não consegui salvar — verifique sua internet e tente de novo');
+    return false;
+  }
+
   const entry = { state: JSON.parse(JSON.stringify(state)), savedAt: Date.now() };
   // Só sobrescreve se estivermos editando uma referência existente (pelo ID interno).
   const existingIndex = editingId ? refs.findIndex(r=>r.state._id===editingId) : -1;
@@ -975,7 +1139,6 @@ function saveCurrentRef(){
   }
   editingId = null;
   renderSavedList();
-  persistDraft();
   return true;
 }
 
@@ -985,28 +1148,18 @@ function startNewBlank(){
   applyStateToForm();
 }
 
-async function persistDraft(){
+async function loadFichasFromSupabase(){
   try{
-    if(window.storage){
-      await window.storage.set('ficha-cliente-refs', JSON.stringify(refs.map(r=>({...r}))), false);
+    const { data, error } = await sb.from('fichas').select('*').order('updated_at', { ascending:true });
+    if(error){
+      showToast('Não consegui carregar suas fichas — verifique sua internet');
+      return;
     }
-  }catch(e){ /* silencioso — PDF continua sendo o backup principal */ }
-}
-
-async function restoreDraft(){
-  try{
-    if(window.storage){
-      const res = await window.storage.get('ficha-cliente-refs', false);
-      if(res && res.value){
-        const parsed = JSON.parse(res.value);
-        if(Array.isArray(parsed) && parsed.length){
-          refs = parsed;
-          renderSavedList();
-          showToast(refs.length + ' referência(s) recuperada(s) de uma sessão anterior');
-        }
-      }
-    }
-  }catch(e){ /* sem rascunho anterior, tudo bem */ }
+    refs = (data||[]).map(row=>({ state: row.data, savedAt: new Date(row.updated_at).getTime() }));
+    renderSavedList();
+  }catch(e){
+    showToast('Erro ao carregar fichas salvas');
+  }
 }
 
 /* ---------- PDF ---------- */
@@ -1089,7 +1242,10 @@ async function generatePdf(){
       showToast('Resolva os avisos da ficha atual antes de finalizar');
       return;
     }
-    saveCurrentRef();
+    const savedOk = await saveCurrentRef();
+    if(!savedOk){
+      return; // saveCurrentRef já mostrou o toast de erro
+    }
     startNewBlank();
     showToast('Última ficha salva automaticamente');
   }
@@ -1277,15 +1433,40 @@ async function generatePdf(){
       });
       cy += cellH;
     }
+  });
 
-    // rodapé técnico discreto (dados estruturados para leitura automática)
-    let ty = pageH - 20;
-    if(cy > ty - 6){ doc.addPage(); ty = pageH - 20; }
+  // ---------- APÊNDICE: dados técnicos completos (para leitura automática depois) ----------
+  doc.addPage();
+  let ay = 26;
+  doc.setFont('helvetica','bold');
+  doc.setFontSize(12);
+  doc.setTextColor(...GREY.ink);
+  doc.text('Dados técnicos', margin, ay);
+  ay += 6;
+  doc.setFont('helvetica','normal');
+  doc.setFontSize(8.5);
+  doc.setTextColor(...GREY.sub);
+  doc.text('Uso interno do estúdio — permite gerar os prompts automaticamente a partir deste arquivo.', margin, ay);
+  ay += 10;
+
+  refs.forEach(r=>{
+    if(ay > pageH - 24){ doc.addPage(); ay = 26; }
+    doc.setFont('helvetica','bold');
+    doc.setFontSize(9);
+    doc.setTextColor(...GREY.ink);
+    doc.text('Ref. ' + (r.state.codigo || '?'), margin, ay);
+    ay += 4.5;
+
     doc.setFont('courier','normal');
-    doc.setFontSize(5.5);
-    doc.setTextColor(205,205,205);
-    const jsonLines = doc.splitTextToSize('DATA:' + buildStructuredData(r), contentW);
-    doc.text(jsonLines.slice(0,3), margin, ty - 4);
+    doc.setFontSize(6.4);
+    doc.setTextColor(...GREY.sub);
+    const lines = doc.splitTextToSize(buildStructuredData(r), contentW);
+    lines.forEach(line=>{
+      if(ay > pageH - 16){ doc.addPage(); ay = 26; }
+      doc.text(line, margin, ay);
+      ay += 3.4;
+    });
+    ay += 6;
   });
 
   // ---------- PASSADA FINAL: cabeçalho/rodapé numerado em toda página ----------
@@ -1300,11 +1481,126 @@ async function generatePdf(){
   showToast('PDF gerado — confira sua pasta de downloads');
 }
 
+/* ---------- Supabase / login ---------- */
+
+const SUPABASE_URL = 'https://oosjcxnednimdtkhdhel.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9vc2pjeG5lZG5pbWR0a2hkaGVsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODM3MDA5OTksImV4cCI6MjA5OTI3Njk5OX0.jnKHdYI4U_aT-CDB7sY6PpfsJsfGKGd0XDnXhS0dMJg';
+const ADMIN_PIN = '1234';
+
+const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+function usernameToEmail(u){
+  return u.trim().toLowerCase().replace(/\s+/g,'') + '@cliente.local';
+}
+
+async function doLogin(){
+  const user = el('login_user').value;
+  const pass = el('login_pass').value;
+  el('loginError').textContent = '';
+  if(!user.trim() || !pass){
+    el('loginError').textContent = 'Preencha usuário e senha.';
+    return;
+  }
+  const { error } = await sb.auth.signInWithPassword({ email: usernameToEmail(user), password: pass });
+  if(error){
+    el('loginError').textContent = 'Usuário ou senha incorretos.';
+    return;
+  }
+  await enterApp();
+}
+
+function showAdminGate(){
+  el('adminGate').style.display = 'block';
+  el('btnShowAdminGate').style.display = 'none';
+}
+function hideAdminGate(){
+  el('adminGate').style.display = 'none';
+  el('admin_pin').value = '';
+  el('adminGateError').textContent = '';
+  el('btnShowAdminGate').style.display = 'inline-block';
+}
+function unlockAdmin(){
+  if(el('admin_pin').value === ADMIN_PIN){
+    el('adminGate').style.display = 'none';
+    el('adminPanel').style.display = 'block';
+    el('adminGateError').textContent = '';
+  } else {
+    el('adminGateError').textContent = 'Senha incorreta.';
+  }
+}
+function backToLoginFromAdmin(){
+  el('adminPanel').style.display = 'none';
+  el('adminCreateMsg').classList.remove('show','error');
+  el('new_nome').value = ''; el('new_user').value = ''; el('new_pass').value = '';
+  hideAdminGate();
+}
+
+async function createClientAccount(){
+  const nome = el('new_nome').value.trim();
+  const user = el('new_user').value.trim();
+  const pass = el('new_pass').value;
+  const msg = el('adminCreateMsg');
+  msg.classList.remove('show','error');
+
+  if(!user || !pass){
+    msg.textContent = 'Preencha usuário e senha.';
+    msg.classList.add('show','error');
+    return;
+  }
+  const { error } = await sb.auth.signUp({
+    email: usernameToEmail(user),
+    password: pass,
+    options: { data: { display_name: nome || user } }
+  });
+  if(error){
+    msg.textContent = 'Erro ao criar conta: ' + error.message;
+    msg.classList.add('show','error');
+    return;
+  }
+  await sb.auth.signOut(); // evita ficar logado como o cliente recém-criado
+  msg.textContent = 'Conta criada!\nUsuário: ' + user + '\nSenha: ' + pass;
+  msg.classList.add('show');
+  el('new_nome').value = ''; el('new_user').value = ''; el('new_pass').value = '';
+}
+
+async function enterApp(){
+  el('loginScreen').style.display = 'none';
+  el('appScreen').style.display = 'block';
+  await loadFichasFromSupabase();
+}
+
+async function doLogout(){
+  await sb.auth.signOut();
+  refs = [];
+  editingId = null;
+  startNewBlank();
+  renderSavedList();
+  el('appScreen').style.display = 'none';
+  el('loginScreen').style.display = 'flex';
+  el('login_pass').value = '';
+}
+
+function bindLoginScreen(){
+  el('loginLogo').src = LOGO_DATA_URI;
+  el('btnLogin').addEventListener('click', doLogin);
+  el('login_pass').addEventListener('keydown', (e)=>{ if(e.key==='Enter') doLogin(); });
+  el('login_user').addEventListener('keydown', (e)=>{ if(e.key==='Enter') doLogin(); });
+
+  el('btnShowAdminGate').addEventListener('click', showAdminGate);
+  el('btnCancelAdminGate').addEventListener('click', hideAdminGate);
+  el('btnAdminUnlock').addEventListener('click', unlockAdmin);
+  el('admin_pin').addEventListener('keydown', (e)=>{ if(e.key==='Enter') unlockAdmin(); });
+
+  el('btnCreateClient').addEventListener('click', createClientAccount);
+  el('btnBackToLogin').addEventListener('click', backToLoginFromAdmin);
+}
+
 /* ---------- init ---------- */
 
 function bindActions(){
-  el('btnSalvar').addEventListener('click', ()=>{
-    if(saveCurrentRef()){
+  el('btnSalvar').addEventListener('click', async ()=>{
+    const ok = await saveCurrentRef();
+    if(ok){
       showToast('Referência ' + state.codigo + ' salva!');
       startNewBlank();
       window.scrollTo({top:0,behavior:'smooth'});
@@ -1315,6 +1611,7 @@ function bindActions(){
     showToast('Ficha limpa');
   });
   el('btnFinalizar').addEventListener('click', generatePdf);
+  el('btnLogout').addEventListener('click', doLogout);
 }
 
 function renderLogoFooter(){
@@ -1328,9 +1625,14 @@ function renderLogoFooter(){
   bindComprimento();
   bindHeader();
   bindActions();
+  bindLoginScreen();
   applyStateToForm();
   renderSavedList();
-  await restoreDraft();
+
+  const { data: { session } } = await sb.auth.getSession();
+  if(session){
+    await enterApp();
+  }
 })();
 </script>
 </body>
