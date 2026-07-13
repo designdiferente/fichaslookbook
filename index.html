@@ -96,7 +96,7 @@
   .concept-sub{font-size:12.5px;color:var(--ink-soft);margin-top:2px;}
 
   label.f-label{display:block;font-size:13px;font-weight:600;color:var(--ink-soft);margin-bottom:6px;}
-  input[type=text], textarea{
+  input[type=text], select, textarea{
     width:100%;
     font-family:-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif;
     font-size:15.5px;
@@ -106,7 +106,8 @@
     background:#FCFBF9;
     color:var(--ink);
   }
-  input[type=text]:focus, textarea:focus{outline:2px solid var(--ink);outline-offset:1px;border-color:var(--ink);}
+  input[type=text]:focus, select:focus, textarea:focus{outline:2px solid var(--ink);outline-offset:1px;border-color:var(--ink);}
+  select{cursor:pointer;}
   textarea{resize:vertical;min-height:64px;}
   .field{margin-bottom:14px;}
   .field:last-child{margin-bottom:0;}
@@ -430,7 +431,7 @@
   <div class="login-card">
     <img src="" id="loginLogo" alt="AI Creative Studio">
     <h1>Ficha do Lookbook</h1>
-    <p class="login-sub">Entre com o usuário e senha que o estúdio te passou.</p>
+    <p class="login-sub">Entre com o usuário e senha que a estúdio te passou.</p>
 
     <div class="field">
       <label class="f-label">Usuário</label>
@@ -519,7 +520,17 @@
     </div>
     <div class="field">
       <label class="f-label">Grade</label>
-      <input type="text" id="f_grade" placeholder="descreva livremente, ex: Bebê Menina, Infantil Menino, Básicos...">
+      <select id="f_grade">
+        <option value="">Selecione a grade</option>
+        <option value="RN">RN</option>
+        <option value="Bebê">Bebê</option>
+        <option value="Primeiros Passos">Primeiros Passos</option>
+        <option value="Infantil">Infantil</option>
+        <option value="Juvenil">Juvenil</option>
+        <option value="Teen">Teen</option>
+        <option value="Adulto">Adulto</option>
+        <option value="Plus Size">Plus Size</option>
+      </select>
     </div>
   </div>
 
@@ -907,7 +918,7 @@ function applyGenderTheme(){
 function bindHeader(){
   el('f_codigo').addEventListener('input', ()=>{ state.codigo = el('f_codigo').value; });
   el('f_variante').addEventListener('input', ()=>{ state.variante = el('f_variante').value; });
-  el('f_grade').addEventListener('input', ()=>{ state.grade = el('f_grade').value; });
+  el('f_grade').addEventListener('change', ()=>{ state.grade = el('f_grade').value; });
   el('f_obs').addEventListener('input', ()=>{ state.obs = el('f_obs').value; });
   el('f_genero').querySelectorAll('button').forEach(btn=>{
     btn.addEventListener('click', ()=>{
