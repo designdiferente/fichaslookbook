@@ -595,8 +595,8 @@
     <div class="field">
       <label class="f-label">O modelo é...</label>
       <div class="gender-pills" id="f_genero">
-        <button data-val="menina" class="on">Menina</button>
-        <button data-val="menino">Menino</button>
+        <button data-val="menina" class="on">Feminino</button>
+        <button data-val="menino">Masculino</button>
       </div>
     </div>
     <div class="field">
@@ -1274,7 +1274,7 @@ function collectPhotos(s){
 function dataRows(s){
   const rows = [];
   rows.push(['Grade', s.grade || '—']);
-  rows.push(['Modelo', s.genero==='menino' ? 'Menino' : 'Menina']);
+  rows.push(['Modelo', s.genero==='menino' ? 'Masculino' : 'Feminino']);
   rows.push(['Variante', s.variante || '—']);
   rows.push(['Foto conceito', s.foto_conceito ? 'Sim' : 'Não']);
   QUAL_PHOTO_FIELDS.forEach(f=>{
@@ -1390,7 +1390,7 @@ async function generatePdf(){
     doc.text(String(i+1).padStart(2,'0'), margin, y);
     doc.text(s.codigo || '(sem número)', margin + 12, y);
     doc.setTextColor(...GREY.sub);
-    const meta = [s.grade || 'sem grade', s.genero==='menino'?'Menino':'Menina'];
+    const meta = [s.grade || 'sem grade', s.genero==='menino'?'Masculino':'Feminino'];
     if(s.foto_conceito) meta.push('Conceito');
     doc.text(meta.join('  ·  '), margin + 55, y);
     y += 7;
@@ -1417,7 +1417,7 @@ async function generatePdf(){
     doc.setFont('helvetica','normal');
     doc.setFontSize(9.5);
     doc.setTextColor(...GREY.sub);
-    const metaParts = [s.grade || 'sem grade', s.genero==='menino'?'Menino':'Menina'];
+    const metaParts = [s.grade || 'sem grade', s.genero==='menino'?'Masculino':'Feminino'];
     if(s.variante) metaParts.unshift('Var. ' + s.variante);
     doc.text(metaParts.join('  ·  '), pageW - margin, 30, { align:'right' });
 
