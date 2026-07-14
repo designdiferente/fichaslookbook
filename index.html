@@ -1110,9 +1110,6 @@ function computeAlerts(){
   if(state.comprimento_especificar==='sim' && !state.comprimento_txt.trim()){
     alerts.push('Você marcou "Especificar" em <b>Comprimento</b> mas não escreveu até onde.');
   }
-  if(state.comprimento_especificar!=='sim'){
-    alerts.push('Especifique o <b>comprimento</b> da peça.');
-  }
   return alerts;
 }
 
