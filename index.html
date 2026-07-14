@@ -114,6 +114,8 @@
   select{cursor:pointer;}
   textarea{resize:vertical;min-height:64px;}
   .field{margin-bottom:14px;}
+  .row2{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+  .row2 .field{margin-bottom:14px;}
   .field:last-child{margin-bottom:0;}
 
   /* pergunta com toggle sim/nao */
@@ -482,18 +484,18 @@
   /* ---------- botao de sair no header ---------- */
   .logout-btn{
     position:absolute;
-    top:20px;right:16px;
-    background:rgba(255,255,255,.14);
+    top:14px;right:16px;
+    background:#FF3B30;
     color:#fff;
     border:none;
     border-radius:20px;
     padding:6px 14px;
     font-size:12px;
-    font-weight:600;
+    font-weight:700;
     cursor:pointer;
     font-family:var(--font-main);
   }
-  .logout-btn:hover{background:rgba(255,255,255,.24);}
+  .logout-btn:hover{background:#E5342A;}
   header .inner{position:relative;}
 </style>
 </head>
@@ -576,7 +578,6 @@
       <div class="concept-box" id="conceptBox"></div>
       <div class="concept-text">
         <div class="concept-title">Essa peça é para foto conceito?</div>
-        <div class="concept-sub">Não precisa marcar se não for — isso não impede de finalizar a ficha</div>
       </div>
     </div>
   </div>
@@ -584,19 +585,14 @@
   <div class="card">
     <h2>Referência</h2>
     <div class="subtitle">Identificação da peça que você está descrevendo</div>
-    <div class="field">
-      <label class="f-label">Número da referência</label>
-      <input type="text" id="f_codigo" placeholder="ex: 10110">
-    </div>
-    <div class="field">
-      <label class="f-label">Variante</label>
-      <input type="text" id="f_variante" placeholder="qual é a variante dessa referência? (se houver)">
-    </div>
-    <div class="field">
-      <label class="f-label">O modelo é...</label>
-      <div class="gender-pills" id="f_genero">
-        <button data-val="menina" class="on">Feminino</button>
-        <button data-val="menino">Masculino</button>
+    <div class="row2">
+      <div class="field">
+        <label class="f-label">Número da referência</label>
+        <input type="text" id="f_codigo" placeholder="ex: 10110">
+      </div>
+      <div class="field">
+        <label class="f-label">Variante</label>
+        <input type="text" id="f_variante" placeholder="se houver">
       </div>
     </div>
     <div class="field">
@@ -612,6 +608,13 @@
         <option value="Adulto">Adulto</option>
         <option value="Plus Size">Plus Size</option>
       </select>
+    </div>
+    <div class="field">
+      <label class="f-label">O modelo é...</label>
+      <div class="gender-pills" id="f_genero">
+        <button data-val="menina" class="on">Feminino</button>
+        <button data-val="menino">Masculino</button>
+      </div>
     </div>
   </div>
 
@@ -1104,6 +1107,12 @@ function computeAlerts(){
       alerts.push(`Você marcou "Sim" em <b>${esc(f.label)}</b> mas não descreveu nem mandou foto.`);
     }
   });
+  if(state.comprimento_especificar==='sim' && !state.comprimento_txt.trim()){
+    alerts.push('Você marcou "Especificar" em <b>Comprimento</b> mas não escreveu até onde.');
+  }
+  if(state.comprimento_especificar!=='sim'){
+    alerts.push('Especifique o <b>comprimento</b> da peça.');
+  }
   return alerts;
 }
 
@@ -1196,6 +1205,12 @@ async function deleteRef(id){
 function validateBeforeSave(){
   if(!state.codigo.trim()){
     showToast('Preencha o número da referência antes de salvar');
+    return false;
+  }
+  const alerts = computeAlerts();
+  if(alerts.length){
+    renderAlerts();
+    showToast('Resolva os avisos assinalados antes de salvar');
     return false;
   }
   return true;
