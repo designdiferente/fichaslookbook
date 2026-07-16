@@ -291,6 +291,55 @@
   }
   .saved-tile:hover .tile-hover-label{opacity:1;}
 
+  /* ---------- selecao em massa ---------- */
+  .saved-head-row{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;margin-bottom:14px;}
+  .btn-select-toggle{
+    background:var(--neutral-soft);color:var(--ink);border:none;border-radius:8px;
+    padding:8px 14px;font-size:12.5px;font-weight:600;cursor:pointer;
+    font-family:var(--font-main);flex-shrink:0;white-space:nowrap;
+  }
+  .btn-select-toggle:hover{background:var(--line);}
+  .btn-select-toggle.active{background:var(--ink);color:#fff;}
+
+  .selection-bar{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px;}
+  .btn-ghost-sm{
+    background:#fff;border:1.5px solid var(--line);color:var(--ink);border-radius:8px;
+    padding:8px 14px;font-size:12.5px;font-weight:600;cursor:pointer;font-family:var(--font-main);
+  }
+  .btn-ghost-sm:hover{background:var(--bg);}
+  .btn-delete-sel{
+    background:var(--nao-bg);color:var(--nao);border:none;border-radius:8px;
+    padding:8px 14px;font-size:12.5px;font-weight:700;cursor:pointer;font-family:var(--font-main);
+  }
+  .btn-delete-sel:disabled{opacity:.4;cursor:not-allowed;}
+  .btn-delete-sel:not(:disabled):hover{background:var(--nao);color:#fff;}
+
+  .delete-confirm-banner{
+    display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;
+    background:var(--nao-bg);border:1px solid #E3B9B3;border-radius:10px;
+    padding:12px 14px;margin-bottom:14px;font-size:13px;font-weight:700;color:var(--nao);
+  }
+  .delete-confirm-actions{display:flex;gap:8px;}
+  .btn-confirm-del{
+    background:var(--nao);color:#fff;border:none;border-radius:7px;
+    padding:7px 14px;font-size:12.5px;font-weight:700;cursor:pointer;font-family:var(--font-main);
+  }
+  .btn-confirm-del:hover{background:#8f2e24;}
+
+  .tile-checkbox{
+    display:none;
+    position:absolute;top:4px;right:4px;z-index:3;
+    width:20px;height:20px;border-radius:6px;
+    border:2px solid var(--line);background:#fff;
+    align-items:center;justify-content:center;
+    font-size:12px;color:#fff;font-weight:700;
+  }
+  #savedList.select-mode .tile-del{display:none;}
+  #savedList.select-mode .tile-checkbox{display:flex;}
+  #savedList.select-mode .tile-hover-label{display:none;}
+  .saved-tile.selected{border-color:var(--ink);background:var(--neutral-soft);}
+  .saved-tile.selected .tile-checkbox{background:var(--ink);border-color:var(--ink);}
+
 
   .empty-state{text-align:center;color:var(--ink-soft);font-size:13.5px;padding:20px 10px;}
 
@@ -505,7 +554,7 @@
   <div class="login-card">
     <img src="" id="loginLogo" alt="AI Creative Studio">
     <h1>Ficha do Lookbook</h1>
-    <p class="login-sub">Entre com o usuário e senha que a estúdio te passou.</p>
+    <p class="login-sub">Entre com o usuário e senha que nós passamos a você.</p>
 
     <div class="field">
       <label class="f-label">Usuário</label>
@@ -672,8 +721,28 @@
   </div>
 
   <div class="card" style="margin-top:22px;">
-    <h2>Referências já preenchidas</h2>
-    <div class="subtitle">Toque em uma para revisar ou editar</div>
+    <div class="saved-head-row">
+      <div>
+        <h2>Referências já preenchidas</h2>
+        <div class="subtitle" id="savedSubtitle">Toque em uma para revisar ou editar</div>
+      </div>
+      <button type="button" id="btnToggleSelect" class="btn-select-toggle">Selecionar</button>
+    </div>
+
+    <div id="selectionBar" class="selection-bar" style="display:none;">
+      <button type="button" id="btnSelectAll" class="btn-ghost-sm">Selecionar todas</button>
+      <button type="button" id="btnDeleteSelected" class="btn-delete-sel" disabled>Apagar selecionadas (0)</button>
+      <button type="button" id="btnCancelSelect" class="btn-ghost-sm">Cancelar</button>
+    </div>
+
+    <div id="deleteConfirmBanner" class="delete-confirm-banner" style="display:none;">
+      <span id="deleteConfirmText">Apagar 0 referências?</span>
+      <div class="delete-confirm-actions">
+        <button type="button" id="btnConfirmDeleteSel" class="btn-confirm-del">Sim, apagar</button>
+        <button type="button" id="btnCancelDeleteSel" class="btn-ghost-sm">Cancelar</button>
+      </div>
+    </div>
+
     <div id="savedList"><div class="empty-state">Nenhuma referência salva ainda.</div></div>
   </div>
 
@@ -745,6 +814,8 @@ const MAX_FOTOS = 5;
 let state = defaultState();
 let refs = [];        // referências salvas nesta sessão
 let editingId = null; // ID interno da referência sendo editada (null = nova)
+let selectMode = false;
+let selectedIds = new Set();
 
 function el(id){ return document.getElementById(id); }
 function esc(s){ return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
@@ -985,10 +1056,11 @@ function renderCalcadoPhoto(){
 }
 
 function bindComprimento(){
-  bindSimpleToggle('comprimento');
   const wrap = document.querySelector('[data-toggle="comprimento"]');
   wrap.querySelectorAll('button').forEach(btn=>{
     btn.addEventListener('click', ()=>{
+      wrap.querySelectorAll('button').forEach(b=>{ b.classList.remove('sel-nao','sel-sim'); });
+      btn.classList.add(btn.dataset.val==='sim' ? 'sel-sim' : 'sel-nao');
       state.comprimento_especificar = btn.dataset.val;
       el('comprimento_wrap').style.display = btn.dataset.val==='sim' ? 'block':'none';
     });
@@ -1036,6 +1108,7 @@ function applyConceptState(){
 
 function normalizeState(s){
   if(!s._id) s._id = makeId();
+  delete s.comprimento; // campo redundante de uma versão antiga do app
   QUAL_PHOTO_FIELDS.forEach(f=>{
     if(!Array.isArray(s[f.key+'_fotos'])){
       s[f.key+'_fotos'] = s[f.key+'_foto'] ? [s[f.key+'_foto']] : [];
@@ -1139,15 +1212,21 @@ function updateProgressPill(){
 function renderSavedList(){
   updateProgressPill();
   const wrap = el('savedList');
+  wrap.classList.toggle('select-mode', selectMode);
+
   if(refs.length===0){
     wrap.innerHTML = '<div class="empty-state">Nenhuma referência salva ainda.</div>';
+    updateSelectionUI();
     return;
   }
   wrap.innerHTML = `<div class="saved-grid">` + refs.map(r=>{
+    const id = r.state._id;
+    const isSel = selectedIds.has(id);
     return `
-    <div class="saved-tile" data-tile="${escAttr(r.state._id)}">
+    <div class="saved-tile${isSel ? ' selected' : ''}" data-tile="${escAttr(id)}">
       ${r.state.foto_conceito ? '<div class="tile-concept-dot" title="Foto conceito">C</div>' : ''}
-      <button class="tile-del" data-del="${escAttr(r.state._id)}" title="Excluir">✕</button>
+      <button class="tile-del" data-del="${escAttr(id)}" title="Excluir">✕</button>
+      <div class="tile-checkbox" data-checkbox="${escAttr(id)}">${isSel ? '✓' : ''}</div>
       <div class="tile-code">${esc(r.state.codigo || '?')}</div>
       <div class="tile-grade">${esc(r.state.grade || 'sem grade')}</div>
       <div class="tile-hover-label">Editar</div>
@@ -1156,6 +1235,10 @@ function renderSavedList(){
 
   wrap.querySelectorAll('[data-tile]').forEach(tile=>{
     tile.addEventListener('click', (e)=>{
+      if(selectMode){
+        toggleTileSelection(tile.dataset.tile);
+        return;
+      }
       if(e.target.closest('[data-del]')) return;
       loadRef(tile.dataset.tile);
     });
@@ -1175,6 +1258,63 @@ function renderSavedList(){
       }
     });
   });
+
+  updateSelectionUI();
+}
+
+function toggleTileSelection(id){
+  if(selectedIds.has(id)) selectedIds.delete(id);
+  else selectedIds.add(id);
+  renderSavedList();
+}
+
+function updateSelectionUI(){
+  const count = selectedIds.size;
+  const delBtn = el('btnDeleteSelected');
+  if(delBtn){
+    delBtn.textContent = 'Apagar selecionadas (' + count + ')';
+    delBtn.disabled = count === 0;
+  }
+}
+
+function enterSelectMode(){
+  selectMode = true;
+  selectedIds.clear();
+  el('btnToggleSelect').classList.add('active');
+  el('btnToggleSelect').textContent = 'Selecionando…';
+  el('selectionBar').style.display = 'flex';
+  el('savedSubtitle').textContent = 'Toque nas referências que quer selecionar';
+  renderSavedList();
+}
+
+function exitSelectMode(){
+  selectMode = false;
+  selectedIds.clear();
+  el('btnToggleSelect').classList.remove('active');
+  el('btnToggleSelect').textContent = 'Selecionar';
+  el('selectionBar').style.display = 'none';
+  el('deleteConfirmBanner').style.display = 'none';
+  el('savedSubtitle').textContent = 'Toque em uma para revisar ou editar';
+  renderSavedList();
+}
+
+function askConfirmDeleteSelected(){
+  if(selectedIds.size === 0) return;
+  el('deleteConfirmText').textContent = 'Apagar ' + selectedIds.size + (selectedIds.size===1 ? ' referência?' : ' referências?');
+  el('deleteConfirmBanner').style.display = 'flex';
+}
+
+async function confirmDeleteSelected(){
+  const ids = Array.from(selectedIds);
+  const { error } = await sb.from('fichas').delete().in('id', ids);
+  if(error){
+    showToast('Não consegui apagar — verifique sua internet e tente de novo');
+    return;
+  }
+  refs = refs.filter(r=>!selectedIds.has(r.state._id));
+  if(editingId && selectedIds.has(editingId)) editingId = null;
+  showToast(ids.length + (ids.length===1 ? ' referência apagada' : ' referências apagadas'));
+  exitSelectMode();
 }
 
 function loadRef(id){
@@ -1272,6 +1412,42 @@ async function loadFichasFromSupabase(){
 
 const GREY = { ink:[26,26,26], sub:[110,110,110], hair:[220,220,220], soft:[245,245,245], mid:[150,150,150] };
 
+// Gera os dados completos da referência em JSON compacto (sem o base64 das fotos, só a contagem)
+// Ordem fixa e explícita dos campos, pra exportação ficar sempre igual entre referências
+// (independente da ordem de inserção em memória do objeto `state` de cada uma).
+function buildCompactData(r){
+  const s = r.state;
+  const compact = {};
+  const put = (key, value) => { compact[key] = value; };
+
+  put('_id', s._id);
+  put('codigo', s.codigo);
+  put('variante', s.variante);
+  put('genero', s.genero);
+  put('grade', s.grade);
+  put('foto_conceito', s.foto_conceito);
+
+  QUAL_PHOTO_FIELDS.forEach(f=>{
+    put(f.key+'_tem', s[f.key+'_tem']);
+    put(f.key+'_txt', s[f.key+'_txt']);
+    put(f.key+'_qtd_fotos', (s[f.key+'_fotos']||[]).length);
+  });
+
+  put('cadarco', s.cadarco);
+  put('cadarco_estilo', s.cadarco_estilo);
+  put('por_dentro', s.por_dentro);
+  put('mao_bolso', s.mao_bolso);
+  put('foto_costas', s.foto_costas);
+  put('comprimento_especificar', s.comprimento_especificar);
+  put('comprimento_txt', s.comprimento_txt);
+  put('calcado_usa', s.calcado_usa);
+  put('calcado_txt', s.calcado_txt);
+  put('calcado_qtd_fotos', (s.calcado_fotos||[]).length);
+  put('obs', s.obs);
+
+  return JSON.stringify(compact);
+}
+
 // Coleta fotos de todos os campos de uma referência, com rótulo
 function collectPhotos(s){
   const out = [];
@@ -1365,55 +1541,140 @@ async function generatePdf(){
   const pageW = 210, pageH = 297, margin = 18;
   const contentW = pageW - margin*2;
 
-  // ---------- CAPA ----------
-  // logo central grande
+  // ---------- CAPA / RELATÓRIO (tudo cabe numa página só, em colunas se precisar) ----------
+
+  // cabeçalho compacto — logo pequeno, pra sobrar espaço pro relatório em si
   try{
-    const lw = 70, lh = lw * 286/935;
-    doc.addImage(LOGO_DATA_URI, 'PNG', (pageW - lw)/2, 60, lw, lh);
+    const lw = 24, lh = lw * 286/935;
+    doc.addImage(LOGO_DATA_URI, 'PNG', margin, 12, lw, lh);
   }catch(e){}
 
   doc.setTextColor(...GREY.ink);
   doc.setFont('helvetica','bold');
-  doc.setFontSize(26);
-  doc.text('Ficha do Lookbook', pageW/2, 110, { align:'center' });
-
+  doc.setFontSize(16);
+  doc.text('Ficha do Lookbook', pageW - margin, 17, { align:'right' });
   doc.setFont('helvetica','normal');
-  doc.setFontSize(11);
+  doc.setFontSize(9);
   doc.setTextColor(...GREY.sub);
-  doc.text('Gerado em ' + new Date().toLocaleDateString('pt-BR'), pageW/2, 120, { align:'center' });
+  doc.text('Gerado em ' + new Date().toLocaleDateString('pt-BR'), pageW - margin, 23, { align:'right' });
 
-  // linha divisória
   doc.setDrawColor(...GREY.ink);
   doc.setLineWidth(0.4);
-  doc.line(margin, 134, pageW - margin, 134);
+  doc.line(margin, 32, pageW - margin, 32);
 
-  // sumário
   doc.setFont('helvetica','bold');
   doc.setFontSize(11);
   doc.setTextColor(...GREY.ink);
-  doc.text(refs.length + (refs.length===1?' REFERÊNCIA':' REFERÊNCIAS'), margin, 146);
+  doc.text(refs.length + (refs.length===1?' REFERÊNCIA':' REFERÊNCIAS'), margin, 41);
 
-  doc.setFont('helvetica','normal');
-  doc.setFontSize(10);
-  let y = 156;
-  refs.forEach((r,i)=>{
+  // ordena por número de referência (ordem numérica), não por ordem de criação
+  const sortedRefs = [...refs].sort((a,b)=>
+    (a.state.codigo||'').localeCompare(b.state.codigo||'', undefined, {numeric:true, sensitivity:'base'})
+  );
+
+  // legenda dos marcadores
+  const BADGE_C  = [185,133,46];   // âmbar — foto conceito
+  const BADGE_PC = [46,125,107];   // verde-azulado — peça específica na parte de cima
+  const BADGE_PB = [123,79,166];   // roxo — peça específica na parte de baixo
+  const BADGE_CT = [196,58,46];    // vermelho — necessita foto de costas
+
+  const LEGEND_ITEMS = [
+    { letter:'C',  color:BADGE_C,  label:'Foto Conceito' },
+    { letter:'PC', color:BADGE_PC, label:'Peça específica na parte de cima' },
+    { letter:'PB', color:BADGE_PB, label:'Peça específica na parte de baixo' },
+    { letter:'CT', color:BADGE_CT, label:'Necessita foto de costas' },
+  ];
+
+  // desenha a legenda com quebra automática de linha (calcula a largura de cada item de verdade,
+  // em vez de usar posições fixas "no chute" — foi isso que causava o desalinhamento antes)
+  function drawLegend(items, startX, startY, maxX){
+    let x = startX, y = startY;
+    const gap = 4;
+    items.forEach(item=>{
+      doc.setFont('helvetica','normal'); doc.setFontSize(6.3);
+      const label = '= ' + item.label;
+      const labelW = doc.getTextWidth(label);
+      const itemW = 3.8 + 1.4 + labelW;
+      if(x + itemW > maxX && x > startX){ x = startX; y += 6; }
+
+      doc.setFillColor(...item.color);
+      doc.roundedRect(x, y-3.1, 3.8, 3.8, 1, 1, 'F');
+      doc.setFont('helvetica','bold'); doc.setFontSize(5.2);
+      doc.setTextColor(255,255,255);
+      doc.text(item.letter, x+1.9, y-0.35, { align:'center' });
+
+      // reset explícito de fonte/cor antes de escrever o rótulo — é aqui que o bug anterior mordia
+      doc.setFont('helvetica','normal'); doc.setFontSize(6.3);
+      doc.setTextColor(...GREY.sub);
+      doc.text(label, x + 3.8 + 1.4, y);
+
+      x += itemW + gap;
+    });
+    return y;
+  }
+
+  const legendEndY = drawLegend(LEGEND_ITEMS, margin, 46, pageW - margin);
+
+  // ---------- lista em colunas — todas as referências na mesma página ----------
+  const listTop = legendEndY + 11;
+  const listBottom = pageH - 20;
+  let rowH = 7.8;
+  if(refs.length > 45) rowH = 6.8;
+  if(refs.length > 90) rowH = 5.8;
+  const maxRowsPerCol = Math.max(1, Math.floor((listBottom - listTop) / rowH));
+  const numCols = Math.max(1, Math.ceil(refs.length / maxRowsPerCol));
+  const colGap = 6;
+  const colWidth = (contentW - colGap * (numCols - 1)) / numCols;
+
+  sortedRefs.forEach((r, i)=>{
+    const col = Math.floor(i / maxRowsPerCol);
+    const rowInCol = i % maxRowsPerCol;
+    const x = margin + col * (colWidth + colGap);
+    const rowY = listTop + rowInCol * rowH;
     const s = r.state;
+
+    // código da referência, à esquerda
+    doc.setFont('helvetica','bold');
+    doc.setFontSize(8);
     doc.setTextColor(...GREY.ink);
-    doc.text(String(i+1).padStart(2,'0'), margin, y);
-    doc.text(s.codigo || '(sem número)', margin + 12, y);
+    const codeText = s.codigo || '(s/nº)';
+    doc.text(codeText, x, rowY);
+    const codeW = doc.getTextWidth(codeText);
+
+    // selos, logo em seguida do código (próximos, à direita dele)
+    let bx = x + codeW + 3;
+    const drawBadge = (letter, color) => {
+      const w = 3.9;
+      doc.setFillColor(...color);
+      doc.roundedRect(bx, rowY - 2.9, w, 3.7, 0.9, 0.9, 'F');
+      doc.setFont('helvetica','bold'); doc.setFontSize(4.6);
+      doc.setTextColor(255,255,255);
+      doc.text(letter, bx + w/2, rowY - 0.2, { align:'center' });
+      bx += w + 1.3;
+    };
+    if(s.foto_conceito) drawBadge('C', BADGE_C);
+    if(s.parte_cima_tem==='sim') drawBadge('PC', BADGE_PC);
+    if(s.parte_baixo_tem==='sim') drawBadge('PB', BADGE_PB);
+    if(s.foto_costas==='sim') drawBadge('CT', BADGE_CT);
+
+    // grade e gênero, embaixo
+    doc.setFont('helvetica','normal');
+    doc.setFontSize(6.6);
     doc.setTextColor(...GREY.sub);
-    const meta = [s.grade || 'sem grade', s.genero==='menino'?'Masculino':'Feminino'];
-    if(s.foto_conceito) meta.push('Conceito');
-    doc.text(meta.join('  ·  '), margin + 55, y);
-    y += 7;
-    if(y > pageH - 24){ doc.addPage(); y = 30; }
+    doc.text((s.grade || '—') + ' · ' + (s.genero==='menino'?'Masc':'Fem'), x, rowY + 2.9);
+
+    // linha divisória, separando uma referência da próxima
+    doc.setDrawColor(...GREY.hair);
+    doc.setLineWidth(0.15);
+    doc.line(x, rowY + 4.6, x + colWidth, rowY + 4.6);
   });
 
   // (cabeçalho/rodapé de todas as páginas são aplicados numa passada final, depois de sabermos o total)
 
   // ---------- PÁGINAS DE REFERÊNCIA ----------
-  refs.forEach((r, idx)=>{
+  sortedRefs.forEach((r, idx)=>{
     doc.addPage();
+    const firstPageOfRef = doc.internal.getNumberOfPages();
     const s = r.state;
     let cy = 30;
 
@@ -1535,7 +1796,44 @@ async function generatePdf(){
       });
       cy += cellH;
     }
+
+    // ---------- dados técnicos ocultos — sempre na PRIMEIRA página da referência,
+    // mesmo que ela tenha estourado pra mais páginas por causa das fotos ----------
+    try{
+      const lastPageOfRef = doc.internal.getNumberOfPages();
+      doc.setPage(firstPageOfRef);
+      const vertRun = pageH - 26; // corrida vertical disponível, com folga no topo/rodapé
+      const vLines = chunkByWidth(doc, buildCompactData(r), vertRun);
+      doc.setFont('courier','normal');
+      doc.setFontSize(4);
+      doc.setTextColor(248,248,248);
+      let vx = pageW - 5;
+      vLines.forEach(line=>{
+        doc.text(line, vx, pageH - 13, { angle: 90 });
+        vx -= 2.3;
+      });
+      doc.setPage(lastPageOfRef);
+    }catch(e){ /* nunca deve travar a geração do PDF por causa disso */ }
   });
+
+  // Quebra uma string em pedaços que cabem em maxWidth, cortando por CONTAGEM DE CARACTERES
+  // (nunca por palavra/espaço) — assim a reconstrução do lado de quem lê é sempre
+  // "juntar tudo sem separador nenhum", sem nenhuma ambiguidade sobre onde havia espaço de verdade.
+  function chunkByWidth(doc, text, maxWidth){
+    const lines = [];
+    let i = 0;
+    while(i < text.length){
+      let lo = 1, hi = text.length - i, best = 1;
+      while(lo <= hi){
+        const mid = Math.floor((lo + hi) / 2);
+        if(doc.getTextWidth(text.substr(i, mid)) <= maxWidth){ best = mid; lo = mid + 1; }
+        else { hi = mid - 1; }
+      }
+      lines.push(text.substr(i, best));
+      i += best;
+    }
+    return lines;
+  }
 
   // ---------- PASSADA FINAL: cabeçalho/rodapé numerado em toda página ----------
   const totalPages = doc.internal.getNumberOfPages();
@@ -1690,6 +1988,21 @@ function bindActions(){
   });
   el('btnFinalizar').addEventListener('click', generatePdf);
   el('btnLogout').addEventListener('click', doLogout);
+
+  el('btnToggleSelect').addEventListener('click', ()=>{
+    if(selectMode) exitSelectMode();
+    else enterSelectMode();
+  });
+  el('btnCancelSelect').addEventListener('click', exitSelectMode);
+  el('btnSelectAll').addEventListener('click', ()=>{
+    refs.forEach(r=> selectedIds.add(r.state._id));
+    renderSavedList();
+  });
+  el('btnDeleteSelected').addEventListener('click', askConfirmDeleteSelected);
+  el('btnCancelDeleteSel').addEventListener('click', ()=>{
+    el('deleteConfirmBanner').style.display = 'none';
+  });
+  el('btnConfirmDeleteSel').addEventListener('click', confirmDeleteSelected);
 }
 
 function renderLogoFooter(){
