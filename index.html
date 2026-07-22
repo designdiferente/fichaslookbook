@@ -661,7 +661,7 @@
     <div class="field">
       <label class="f-label">O modelo é...</label>
       <div class="gender-pills" id="f_genero">
-        <button data-val="menina" class="on">Feminino</button>
+        <button data-val="menina">Feminino</button>
         <button data-val="menino">Masculino</button>
       </div>
     </div>
@@ -794,7 +794,7 @@ function makeId(){
 function defaultState(){
   const s = {
     _id: makeId(),
-    codigo:'', variante:'', genero:'menina', grade:'', foto_conceito:false,
+    codigo:'', variante:'', genero:'', grade:'', foto_conceito:false,
     comprimento_especificar:'nao', comprimento_txt:'',
     calcado_usa:'sim', calcado_txt:'', calcado_fotos:[],
     obs:'',
@@ -1070,7 +1070,9 @@ function bindComprimento(){
 
 function applyGenderTheme(){
   document.body.classList.remove('gender-menino','gender-menina');
-  document.body.classList.add(state.genero==='menino' ? 'gender-menino' : 'gender-menina');
+  if(state.genero==='menino' || state.genero==='menina'){
+    document.body.classList.add(state.genero==='menino' ? 'gender-menino' : 'gender-menina');
+  }
 }
 
 function bindHeader(){
@@ -1342,6 +1344,14 @@ async function deleteRef(id){
 function validateBeforeSave(){
   if(!state.codigo.trim()){
     showToast('Preencha o número da referência antes de salvar');
+    return false;
+  }
+  if(!state.grade){
+    showToast('Selecione a grade antes de salvar');
+    return false;
+  }
+  if(!state.genero){
+    showToast('Selecione se o modelo é feminino ou masculino antes de salvar');
     return false;
   }
   const alerts = computeAlerts();
