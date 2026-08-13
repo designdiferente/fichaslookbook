@@ -1354,6 +1354,10 @@ function validateBeforeSave(){
     showToast('Selecione se o modelo é feminino ou masculino antes de salvar');
     return false;
   }
+  if(state.calcado_usa==='sim' && !(state.calcado_txt||'').trim() && !(state.calcado_fotos||[]).length){
+    showToast('Adicione uma foto ou descrição do calçado antes de salvar');
+    return false;
+  }
   const alerts = computeAlerts();
   if(alerts.length){
     renderAlerts();
