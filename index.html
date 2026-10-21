@@ -962,8 +962,28 @@
     #appScreen .dropzone{ padding:12px 14px; }
   }
 
+  /* calçado: obrigatório informar (texto e/ou foto) */
+  #appScreen .req-tag{
+    display:inline-block; margin-left:6px; padding:2px 8px; border-radius:999px;
+    font-size:11px; font-weight:600; letter-spacing:.01em; text-transform:none;
+    background:color-mix(in srgb, var(--accent, #1f7a4d) 12%, #fff);
+    color:var(--accent, #1f7a4d);
+  }
+  #appScreen .card.need-info{
+    border-color:#d9534f;
+    box-shadow:0 0 0 4px rgba(217,83,79,.12), 0 8px 24px rgba(0,0,0,.06);
+  }
+  #appScreen .card.need-info .req-tag{ background:#fdeceb; color:#b3342f; }
+  #appScreen .card.need-info #f_calcado_txt,
+  #appScreen .card.need-info .dropzone{ border-color:#d9534f; }
+  #appScreen .card.shake{ animation:cardShake .45s cubic-bezier(.36,.07,.19,.97); }
+  @keyframes cardShake{
+    10%,90%{ transform:translateX(-2px); } 20%,80%{ transform:translateX(4px); }
+    30%,50%,70%{ transform:translateX(-6px); } 40%,60%{ transform:translateX(6px); }
+  }
+
   @media (prefers-reduced-motion: reduce){
-    #appScreen *, #appScreen *::before, #appScreen *::after, .toast{
+    #appScreen *,#appScreen *::before, #appScreen *::after, .toast{
       animation-duration:.01ms !important;
       animation-iteration-count:1 !important;
       transition-duration:.01ms !important;
@@ -1116,13 +1136,13 @@
 
   <div class="card" data-step="05">
     <h2>Calçado</h2>
-    <div class="subtitle">Se possível, mande uma foto do calçado — ajuda bastante</div>
+    <div class="subtitle">Se o modelo vai usar calçado, informe qual: por foto e/ou escrita</div>
     <div class="toggle2" data-toggle="calcado_usa">
       <button data-val="nao" class="sel-nao">Descalço(a)</button>
       <button data-val="sim" class="sel-sim">Vai usar calçado</button>
     </div>
     <div class="qual-wrap" id="calcado_wrap">
-      <label class="f-label">Tipo e cor do calçado</label>
+      <label class="f-label">Qual calçado? <span class="req-tag">obrigatório: escreva e/ou envie foto</span></label>
       <input type="text" id="f_calcado_txt" placeholder="ex: tênis branco, marca X">
       <div id="calcado_photo_mount"></div>
     </div>
@@ -1560,16 +1580,17 @@ function renderThumbs(box, fotos, onRemove){
 
 // calçado: usa a mesma área de foto (clique ou arrastar) dos outros campos
 function bindCalcado(){
-  el('calcado_photo_mount').outerHTML = dropzoneHTML('calcado', 'Recomendado');
+  el('calcado_photo_mount').outerHTML = dropzoneHTML('calcado', 'Foto ou texto acima');
   bindSimpleToggle('calcado_usa');
   // override to also toggle wrap visibility
   const wrap = document.querySelector('[data-toggle="calcado_usa"]');
   wrap.querySelectorAll('button').forEach(btn=>{
     btn.addEventListener('click', ()=>{
       el('calcado_wrap').style.display = btn.dataset.val==='sim' ? 'block':'none';
+      renderAlerts();
     });
   });
-  el('f_calcado_txt').addEventListener('input', ()=>{ state.calcado_txt = el('f_calcado_txt').value; });
+  el('f_calcado_txt').addEventListener('input', ()=>{ state.calcado_txt = el('f_calcado_txt').value; renderAlerts(); });
   bindPhotoInput('calcado');
 }
 function renderCalcadoPhoto(){
@@ -1695,6 +1716,16 @@ function applyStateToForm(){
   renderAlerts();
 }
 
+// calçado: se "Vai usar calçado", precisa de texto e/ou foto
+let _calcadoTentou = false;
+function calcadoFaltando(){
+  return state.calcado_usa==='sim' && !(state.calcado_txt||'').trim() && !(state.calcado_fotos||[]).length;
+}
+function syncCalcadoCard(){
+  const card = el('calcado_wrap').closest('.card');
+  if(!calcadoFaltando()) _calcadoTentou = false;
+  card.classList.toggle('need-info', _calcadoTentou && calcadoFaltando());
+}
 function computeAlerts(){
   const alerts = [];
   QUAL_PHOTO_FIELDS.forEach(f=>{
@@ -1705,6 +1736,9 @@ function computeAlerts(){
   });
   if(state.comprimento_especificar==='sim' && !state.comprimento_txt.trim()){
     alerts.push('Você marcou "Especificar" em <b>Comprimento</b> mas não escreveu até onde.');
+  }
+  if(calcadoFaltando() && _calcadoTentou){
+    alerts.push('Você marcou <b>Vai usar calçado</b> mas não informou qual. Escreva o tipo e a cor e/ou envie uma foto.');
   }
   return alerts;
 }
@@ -1718,6 +1752,7 @@ function isDraftBlank(){
 
 let _lastAlertsHtml = null;
 function renderAlerts(){
+  syncCalcadoCard();
   const alerts = computeAlerts();
   const html = alerts.map(a=>`<div class="alert-banner"><span class="alert-ic">!</span><span>${a}</span></div>`).join('');
   if(html === _lastAlertsHtml) return;
@@ -1903,8 +1938,14 @@ function validateBeforeSave(){
     showToast('Selecione se o modelo é feminino ou masculino antes de salvar');
     return false;
   }
-  if(state.calcado_usa==='sim' && !(state.calcado_txt||'').trim() && !(state.calcado_fotos||[]).length){
-    showToast('Adicione uma foto ou descrição do calçado antes de salvar');
+  if(calcadoFaltando()){
+    _calcadoTentou = true;
+    renderAlerts();
+    syncCalcadoCard();
+    const card = el('calcado_wrap').closest('.card');
+    card.classList.remove('shake'); void card.offsetWidth; card.classList.add('shake');
+    card.scrollIntoView({behavior:'smooth', block:'center'});
+    showToast('Informe qual calçado: escreva e/ou envie uma foto');
     return false;
   }
   const alerts = computeAlerts();
