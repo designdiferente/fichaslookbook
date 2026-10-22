@@ -1598,6 +1598,41 @@ body.rp-open{ overflow:hidden; }
 .lote-scroller.can-right .lote-add .add-txt{ display:none; }
 .lote-scroller.can-right .lote-add{ width:30px; padding:0; justify-content:center; }
 
+/* ---------- filtros do painel ---------- */
+.rp-tools{ display:flex; align-items:flex-end; flex-wrap:wrap; gap:10px 18px; padding:12px 22px; background:#FAF9F6; border-bottom:1px solid #EFECE6; }
+.rp-f{ display:flex; flex-direction:column; gap:4px; margin:0; }
+.rp-f > span{ font-size:10.5px; font-weight:800; letter-spacing:.06em; text-transform:uppercase; color:var(--ink-soft); }
+.rp-f select{
+  height:34px; padding:0 30px 0 11px; border-radius:10px; border:1px solid var(--line); background:#fff; color:var(--ink);
+  font-family:var(--font-main); font-size:13px; font-weight:600; cursor:pointer; min-width:210px;
+  appearance:none; -webkit-appearance:none;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%236b665c' stroke-width='2.6' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat:no-repeat; background-position:right 10px center; background-size:12px;
+}
+.rp-f select:focus-visible{ outline:2px solid var(--accent); outline-offset:1px; }
+.rp-seg{ display:inline-flex; padding:3px; gap:2px; border-radius:11px; background:#EFECE6; }
+.rp-seg button{
+  height:28px; padding:0 13px; border:none; border-radius:8px; background:transparent; color:var(--ink-soft);
+  font-family:var(--font-main); font-size:12.5px; font-weight:700; cursor:pointer; transition:background-color .15s, color .15s, box-shadow .15s;
+}
+.rp-seg button:hover{ color:var(--ink); }
+.rp-seg button.on{ background:#fff; color:var(--ink); box-shadow:0 1px 3px rgba(0,0,0,.14); }
+.rp-seg button.f.on{ background:var(--accent-menina); color:#fff; }
+.rp-seg button.m.on{ background:var(--accent-menino); color:#fff; }
+.rp-clear, .rp-clear-inline{
+  height:34px; padding:0 4px; border:none; background:none; cursor:pointer; color:var(--ink-soft);
+  font-family:var(--font-main); font-size:12.5px; font-weight:700; text-decoration:underline; text-underline-offset:3px;
+}
+.rp-clear[hidden]{ display:none; }
+.rp-clear:hover, .rp-clear-inline:hover{ color:var(--ink); }
+.rp-clear-inline{ height:auto; padding:0 2px; }
+@media (max-width:640px){
+  .rp-tools{ padding:10px 14px; gap:8px 12px; }
+  .rp-f select{ min-width:0; width:100%; }
+  .rp-tools > label.rp-f{ flex:1 1 100%; }
+  .rp-seg button{ padding:0 11px; }
+}
+
   /* =====================================================================
      Ícones + alinhamento geral (cabeçalhos de cartão e perguntas em linha)
      ===================================================================== */
@@ -2526,7 +2561,8 @@ function renderSavedList(){
   const wrap = el('savedList');
   wrap.classList.toggle('select-mode', selectMode);
   const lote = activeLote();
-  const lista = lote ? refsInLote(lote.id) : refs;
+  const todas = lote ? refsInLote(lote.id) : refs;
+  const lista = viewRefs(todas);
   if(el('savedTitle')) el('savedTitle').textContent = lote ? 'Referências do ' + lf(lote) : 'Referências já preenchidas';
   if(!selectMode && el('savedSubtitle')){
     el('savedSubtitle').textContent = lista.length
@@ -2535,7 +2571,9 @@ function renderSavedList(){
   }
 
   if(lista.length===0){
-    wrap.innerHTML = '<div class="empty-state">' + (lote ? 'Nenhuma referência neste lote ainda. Preencha a ficha acima e salve.' : 'Nenhuma referência salva ainda.') + '</div>';
+    wrap.innerHTML = todas.length
+      ? '<div class="empty-state">Nenhuma referência com esse filtro. <button type="button" class="rp-clear-inline" onclick="resetRefView()">Limpar filtros</button></div>'
+      : '<div class="empty-state">' + (lote ? 'Nenhuma referência neste lote ainda. Preencha a ficha acima e salve.' : 'Nenhuma referência salva ainda.') + '</div>';
     updateSelectionUI();
     return;
   }
@@ -3802,10 +3840,30 @@ function initRefDeck(){
         <div class="rp-actions"></div>
         <button type="button" class="rp-close" data-rp-close aria-label="Fechar">✕</button>
       </div>
+      <div class="rp-tools" id="rpTools">
+        <label class="rp-f"><span>Ordenar</span>
+          <select id="rpSort">
+            <option value="">Ordem de criação</option>
+            <option value="num-asc">Número: menor para maior</option>
+            <option value="num-desc">Número: maior para menor</option>
+            <option value="grade-asc">Grade: menor para maior</option>
+            <option value="grade-desc">Grade: maior para menor</option>
+          </select></label>
+        <div class="rp-f"><span>Modelo</span>
+          <div class="rp-seg" id="rpModel" role="group" aria-label="Filtrar por modelo">
+            <button type="button" data-m="" class="on">Todos</button>
+            <button type="button" data-m="menina" class="f">Feminino</button>
+            <button type="button" data-m="menino" class="m">Masculino</button>
+          </div></div>
+        <button type="button" class="rp-clear" id="rpClear" hidden>Limpar filtros</button>
+      </div>
       <div class="rp-body"></div>
     </div>`;
   (el('appScreen') || document.body).appendChild(panel);
   const body = panel.querySelector('.rp-body');
+  el('rpSort').addEventListener('change', e=>{ _refView.sort = e.target.value; syncRefTools(); renderSavedList(); });
+  el('rpModel').addEventListener('click', e=>{ const b = e.target.closest('button'); if(!b) return; _refView.model = b.dataset.m; syncRefTools(); renderSavedList(); });
+  el('rpClear').addEventListener('click', resetRefView);
   panel.querySelector('.rp-actions').appendChild(el('btnToggleSelect'));
   ['selectionBar','deleteConfirmBanner','savedList'].forEach(id=> body.appendChild(el(id)));
   list.parentElement; // já movido
@@ -3849,9 +3907,12 @@ function renderRefDeck(){
     ? (matchMedia('(hover:hover)').matches ? 'Passe o mouse para espiar. Clique em uma carta para abrir todas, editar ou mover.' : 'Toque nas cartas para abrir todas, editar ou mover.')
     : 'As referências salvas aparecem aqui.';
   el('rpTitle').textContent = lote ? 'Referências do ' + lf(lote) : 'Referências';
+  const nv = viewRefs(lista).length;
+  const cont = refViewActive() ? 'Mostrando ' + nv + ' de ' + n + (n===1 ? ' referência.' : ' referências.') : n + (n===1 ? ' referência.' : ' referências.');
   el('rpSub').textContent = selectMode
-    ? 'Toque nas referências que quer selecionar.'
-    : (n + (n===1 ? ' referência.' : ' referências.') + ' Clique em uma para editar. Use “Mover” para levar para outro lote.');
+    ? 'Toque nas referências que quer selecionar.' + (refViewActive() ? ' ' + cont : '')
+    : cont + ' Clique em uma para editar. Use “Mover” para levar para outro lote.';
+  syncRefTools();
   if(!n){
     deck.innerHTML = '<div class="empty-state">' + (lote ? 'Nenhuma referência neste lote ainda. Preencha a ficha acima e salve.' : 'Nenhuma referência salva ainda.') + '</div>';
     deck.classList.add('is-empty');
@@ -3913,6 +3974,37 @@ function closeRefsPanel(){
   _refsPanelOpen = false;
   if(selectMode) exitSelectMode();
   p.classList.remove('open'); document.body.classList.remove('rp-open');
+}
+
+
+/* ---------- filtros do painel "Ver todas": ordem e modelo ---------- */
+const GRADE_ORDEM = ['RN','Bebê','Primeiros Passos','Infantil','Juvenil','Teen','Adulto','Plus Size'];
+let _refView = { sort:'', model:'' };
+function viewRefs(list){
+  let out = list.slice();
+  if(_refView.model) out = out.filter(r=> r.state.genero === _refView.model);
+  const num = r => String(r.state.codigo || '');
+  const byNum = (a,b)=> num(a).localeCompare(num(b), 'pt-BR', { numeric:true, sensitivity:'base' });
+  const gi = r => { const i = GRADE_ORDEM.indexOf(r.state.grade); return i < 0 ? 99 : i; };
+  switch(_refView.sort){
+    case 'num-asc':  out.sort(byNum); break;
+    case 'num-desc': out.sort((a,b)=> byNum(b,a)); break;
+    case 'grade-asc':  out.sort((a,b)=> gi(a)-gi(b) || byNum(a,b)); break;
+    case 'grade-desc': out.sort((a,b)=> gi(b)-gi(a) || byNum(a,b)); break;
+  }
+  return out;
+}
+function refViewActive(){ return !!(_refView.sort || _refView.model); }
+function syncRefTools(){
+  const t = el('rpTools'); if(!t) return;
+  el('rpSort').value = _refView.sort;
+  t.querySelectorAll('#rpModel button').forEach(b=> b.classList.toggle('on', b.dataset.m === _refView.model));
+  el('rpClear').hidden = !refViewActive();
+}
+function resetRefView(){
+  _refView = { sort:'', model:'' };
+  syncRefTools();
+  renderSavedList();
 }
 
 
@@ -4600,7 +4692,7 @@ function bindActions(){
   });
   el('btnCancelSelect').addEventListener('click', exitSelectMode);
   el('btnSelectAll').addEventListener('click', ()=>{
-    (activeLote() ? refsInLote(activeLote().id) : refs).forEach(r=> selectedIds.add(r.state._id));
+    viewRefs(activeLote() ? refsInLote(activeLote().id) : refs).forEach(r=> selectedIds.add(r.state._id));
     renderSavedList();
   });
   el('btnDeleteSelected').addEventListener('click', askConfirmDeleteSelected);
